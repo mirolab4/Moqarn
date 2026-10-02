@@ -1,0 +1,117 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'mirolab12@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Reading: user can read their own document, admin can read any user document
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      
+      // Listing: ONLY admin can list pharmacies
+      allow list: if isAdmin();
+      
+      // Creation: normal users cannot assign themselves admin role or pre-set subscribedUntil
+      allow create: if isSignedIn() && 
+        request.auth.uid == userId &&
+        isValidId(userId) &&
+        incoming().id == userId &&
+        incoming().email is string &&
+        incoming().email.size() <= 256 &&
+        incoming().pharmacyName is string &&
+        incoming().pharmacyName.size() <= 128 &&
+        (!('photoURL' in incoming()) || (incoming().photoURL is string && incoming().photoURL.size() <= 1024)) &&
+        (!('displayName' in incoming()) || (incoming().displayName is string && incoming().displayName.size() <= 128)) &&
+        (incoming().role == 'user' || (isAdmin() && incoming().role == 'admin')) &&
+        (incoming().subscribedUntil == null);
+
+      // Updating:
+      // Normal users CANNOT update role, subscribedUntil, trialEndsAt, email, or id.
+      // Normal users can only update pharmacyName, displayName, photoURL.
+      // ONLY admin can update subscribedUntil, trialEndsAt, or role of other users.
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId &&
+          incoming().id == existing().id &&
+          incoming().email == existing().email &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().trialEndsAt == existing().trialEndsAt &&
+          incoming().role == existing().role &&
+          incoming().subscribedUntil == existing().subscribedUntil &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['pharmacyName', 'displayName', 'photoURL']))
+        ||
+        (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['subscribedUntil', 'trialEndsAt', 'role']))
+      );
+
+      // Suppliers subcollection: strictly owned by this pharmacy user
+      match /suppliers/{supplierId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(supplierId);
+        allow create, update: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(supplierId) &&
+          incoming().userId == userId &&
+          incoming().id == supplierId &&
+          incoming().name is string &&
+          incoming().name.size() <= 128 &&
+          incoming().phone is string &&
+          incoming().phone.size() <= 32;
+      }
+
+      // Drugs subcollection: strictly owned by this pharmacy user
+      match /drugs/{drugId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(drugId);
+        allow create, update: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(drugId) &&
+          incoming().userId == userId &&
+          incoming().id == drugId &&
+          incoming().name is string &&
+          incoming().name.size() <= 256 &&
+          incoming().price is number &&
+          incoming().price >= 0 &&
+          incoming().effectivePrice is number &&
+          incoming().effectivePrice >= 0;
+      }
+
+      // Order Cart subcollection: strictly owned by this pharmacy user
+      match /cart/{cartItemId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(cartItemId);
+        allow create, update: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(cartItemId) &&
+          incoming().userId == userId &&
+          incoming().quantity is number &&
+          incoming().quantity > 0;
+      }
+    }
+  }
+}

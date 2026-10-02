@@ -1,0 +1,6 @@
+{
+  "name": "مقارنة أسعار الأدوية",
+  "description": "تطبيق صيدلي متقدم لمقارنة أسعار الأدوية من شركات ومستودعات الأدوية واحتساب السعر الفعلي وإرسال الطلبات عبر واتساب",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

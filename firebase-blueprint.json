@@ -1,0 +1,280 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with pharmacy subscription and trial details",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "User UID matching auth.uid",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "Pharmacy email address",
+          "maxLength": 256
+        },
+        "pharmacyName": {
+          "type": "string",
+          "description": "Pharmacy trade name",
+          "maxLength": 128
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name from Google Auth",
+          "maxLength": 128
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "User avatar photo URL",
+          "maxLength": 1024
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Account creation timestamp"
+        },
+        "trialEndsAt": {
+          "type": "string",
+          "description": "Trial expiration ISO timestamp (7 days after signup)",
+          "maxLength": 64
+        },
+        "subscribedUntil": {
+          "type": "string",
+          "description": "Admin manual subscription expiration ISO timestamp",
+          "maxLength": 64
+        },
+        "role": {
+          "type": "string",
+          "description": "Role of the user, admin or user",
+          "enum": ["admin", "user"]
+        }
+      },
+      "required": ["id", "email", "pharmacyName", "createdAt", "trialEndsAt", "role"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Wholesale pharmaceutical supplier registered by the pharmacy",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique supplier document ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner pharmacy UID",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Supplier company or warehouse name",
+          "maxLength": 128
+        },
+        "phone": {
+          "type": "string",
+          "description": "WhatsApp contact number with country code",
+          "maxLength": 32
+        },
+        "minOrder": {
+          "type": "number",
+          "description": "Optional minimum order limit in local currency"
+        },
+        "columnMapping": {
+          "type": "string",
+          "description": "Serialized JSON template of column mappings for Excel/CSV import",
+          "maxLength": 1024
+        },
+        "lastUploadAt": {
+          "type": "string",
+          "description": "Last price list upload ISO date",
+          "maxLength": 64
+        },
+        "itemCount": {
+          "type": "number",
+          "description": "Number of active items in price list"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Supplier creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Supplier last update timestamp"
+        }
+      },
+      "required": ["id", "userId", "name", "phone", "createdAt", "updatedAt"]
+    },
+    "Drug": {
+      "title": "Drug",
+      "description": "Drug price entry uploaded from a wholesale supplier list",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique drug item document ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner pharmacy UID",
+          "maxLength": 128
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Supplier identifier",
+          "maxLength": 128
+        },
+        "supplierName": {
+          "type": "string",
+          "description": "Supplier display name",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Trade or scientific drug name in Arabic or Latin",
+          "maxLength": 256
+        },
+        "normalizedName": {
+          "type": "string",
+          "description": "Normalized Arabic/English search token string",
+          "maxLength": 512
+        },
+        "price": {
+          "type": "number",
+          "description": "Original wholesale unit price"
+        },
+        "discount": {
+          "type": "number",
+          "description": "Discount percentage"
+        },
+        "bonusBuy": {
+          "type": "number",
+          "description": "Buy units for bonus calculation"
+        },
+        "bonusFree": {
+          "type": "number",
+          "description": "Free units for bonus calculation"
+        },
+        "bonusText": {
+          "type": "string",
+          "description": "Formatted bonus text e.g. 10+1 or 0",
+          "maxLength": 64
+        },
+        "effectivePrice": {
+          "type": "number",
+          "description": "Effective cost per unit after discount and bonus formula"
+        },
+        "expiry": {
+          "type": "string",
+          "description": "Optional expiry date or note",
+          "maxLength": 64
+        },
+        "uncertain": {
+          "type": "boolean",
+          "description": "Whether this item cell was marked uncertain during OCR/AI"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Upload or modification timestamp"
+        }
+      },
+      "required": ["id", "userId", "supplierId", "supplierName", "name", "normalizedName", "price", "effectivePrice", "updatedAt"]
+    },
+    "CartItem": {
+      "title": "CartItem",
+      "description": "Item in the pharmacy order cart grouped by supplier",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique cart item document ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner pharmacy UID",
+          "maxLength": 128
+        },
+        "drugId": {
+          "type": "string",
+          "description": "Source drug ID",
+          "maxLength": 128
+        },
+        "drugName": {
+          "type": "string",
+          "description": "Drug name",
+          "maxLength": 256
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Supplier ID",
+          "maxLength": 128
+        },
+        "supplierName": {
+          "type": "string",
+          "description": "Supplier name",
+          "maxLength": 128
+        },
+        "supplierPhone": {
+          "type": "string",
+          "description": "Supplier WhatsApp phone number",
+          "maxLength": 32
+        },
+        "supplierMinOrder": {
+          "type": "number",
+          "description": "Supplier minimum order threshold"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity to order"
+        },
+        "price": {
+          "type": "number",
+          "description": "Original unit price"
+        },
+        "effectivePrice": {
+          "type": "number",
+          "description": "Effective unit price"
+        },
+        "bonusText": {
+          "type": "string",
+          "description": "Bonus terms text",
+          "maxLength": 64
+        },
+        "discount": {
+          "type": "number",
+          "description": "Discount percentage"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Cart addition timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Cart modification timestamp"
+        }
+      },
+      "required": ["id", "userId", "drugId", "drugName", "supplierId", "supplierName", "quantity", "price", "effectivePrice", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Pharmacy user profile and subscription status"
+    },
+    "/users/{userId}/suppliers/{supplierId}": {
+      "schema": "Supplier",
+      "description": "Suppliers configured by the pharmacy"
+    },
+    "/users/{userId}/drugs/{drugId}": {
+      "schema": "Drug",
+      "description": "Wholesale drug prices uploaded by the pharmacy"
+    },
+    "/users/{userId}/cart/{cartItemId}": {
+      "schema": "CartItem",
+      "description": "Active shopping cart items for the pharmacy"
+    }
+  }
+}
